@@ -1,0 +1,57 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analytics — WorkFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+  <script defer src="{% static 'tasks/live_updates.js' %}"></script>
+</head>
+<body>
+  <div class="app-shell">
+    {% include 'tasks/_sidebar.html' %}
+    <main class="main-content" id="workflow-app" data-team-id="{{ team.id }}">
+      <header class="topbar"><span>{{ team.name }} <span class="crumb">/</span> Analytics</span><a class="notification-link" href="{% url 'notification_list' %}">Notifications{% if unread_notification_count %}<span class="notification-badge">{{ unread_notification_count }}</span>{% endif %}</a></header>
+      <section class="page-heading"><div><p class="eyebrow">PROJECT PERFORMANCE</p><h1>Analytics<span class="heading-dot">.</span></h1><p class="subtitle">Track completion and each member’s task contribution.</p></div></section>
+
+      <section class="task-panel analytics-scope">
+        <form method="get" class="analytics-project-filter">
+          <label for="analytics-project">Show results for</label>
+          <select id="analytics-project" name="project">
+            <option value="">All {{ team.name }} projects</option>
+            {% for project in projects %}<option value="{{ project.id }}" {% if selected_project.id == project.id %}selected{% endif %}>{{ project.name }}</option>{% endfor %}
+          </select>
+          <button type="submit">Show analytics</button>
+          <a class="breadcrumb-link" href="{% url 'project_list' %}">Manage projects</a>
+          <a class="csv-export-link" href="{% url 'export_analytics_csv' %}{% if selected_project %}?project={{ selected_project.id }}{% endif %}">Download CSV report ↓</a>
+        </form>
+        {% if selected_project %}<p class="analytics-scope-name">Showing: <strong>{{ selected_project.name }}</strong></p>{% else %}<p class="analytics-scope-name">Showing all tasks for <strong>{{ team.name }}</strong>.</p>{% endif %}
+      </section>
+
+      <section class="stats" aria-label="Analytics summary">
+        <div class="stat-card"><span class="stat-icon purple">▤</span><span class="stat-number">{{ total_task_count }}</span><span class="stat-caption">Tasks in this view</span></div>
+        <div class="stat-card"><span class="stat-icon green">✓</span><span class="stat-number">{{ completed_count }}</span><span class="stat-caption">Completed</span></div>
+        <div class="stat-card"><span class="stat-icon amber">◎</span><span class="stat-number">{{ members|length }}</span><span class="stat-caption">Team members</span></div>
+        <div class="stat-card"><span class="stat-icon red">!</span><span class="stat-number">{{ overdue_count }}</span><span class="stat-caption">Overdue</span></div>
+      </section>
+
+      <section class="analytics-grid">
+        <section class="task-panel">
+          <div class="panel-heading"><div><h2>Task completion</h2><p>Tasks grouped by their current status.</p></div></div>
+          <div class="large-chart-content"><div class="pie-chart large-pie" style="{{ status_chart_style }}" role="img" aria-label="Task status chart"></div><div class="large-chart-info"><ul class="chart-legend">{% for segment in status_segments %}<li><span class="legend-dot" style="background: {{ segment.color }}"></span><span>{{ segment.label }}</span><strong>{{ segment.value }}</strong></li>{% endfor %}</ul><p class="chart-summary">{{ completed_count }} of {{ total_task_count }} tasks completed{% if total_task_count %} · {% widthratio completed_count total_task_count 100 %}%{% endif %}</p></div></div>
+        </section>
+        <section class="task-panel">
+          <div class="panel-heading"><div><h2>Member contribution</h2><p>Share of tasks assigned to each member.</p></div></div>
+          {% if contribution_segments %}<div class="large-chart-content"><div class="pie-chart large-pie" style="{{ contribution_chart_style }}" role="img" aria-label="Assigned tasks by team member"></div><div class="large-chart-info"><ul class="chart-legend">{% for segment in contribution_segments %}<li><span class="legend-dot" style="background: {{ segment.color }}"></span><span>{{ segment.label }}</span><strong>{{ segment.value }}</strong></li>{% endfor %}</ul><p class="chart-summary">Assignment counts show task distribution, not time or effort.</p></div></div>{% else %}<div class="empty-state compact-empty"><strong>No assigned tasks to compare yet</strong><span>Assign tasks to team members to see their shares.</span></div>{% endif %}
+        </section>
+      </section>
+
+      <section class="task-panel analytics-members"><div class="panel-heading"><div><h2>Member workload</h2><p>Open and overdue tasks assigned to each person{% if selected_project %} in {{ selected_project.name }}{% endif %}.</p></div></div><div class="members-list">{% for member in members %}<div class="member-row"><span class="update-avatar">{% if member.user.workflow_profile.avatar %}<img src="{% url 'profile_icon' member.user.workflow_profile.id %}" alt="">{% else %}{{ member.user.username|first|upper }}{% endif %}</span><span class="member-info"><strong>{{ member.user.username }}{% if member.user.id == request.user.id %} <small>(you)</small>{% endif %}</strong><small>{{ member.get_role_display }} · {{ member.assigned_task_count }} assigned · {{ member.open_task_count }} open · {{ member.overdue_task_count }} overdue · {{ member.completed_task_count }} completed</small></span><span class="workload-meter" aria-label="{{ member.open_task_count }} open tasks">{{ member.open_task_count }} open</span></div>{% endfor %}</div></section>
+    </main>
+  </div>
+</body>
+</html>

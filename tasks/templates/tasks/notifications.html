@@ -1,0 +1,31 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notifications — WorkFlow</title>
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+</head>
+<body>
+  <div class="app-shell">
+    {% include 'tasks/_sidebar.html' %}
+    <main class="main-content">
+      <header class="topbar"><span>WorkFlow <span class="crumb">/</span> Notifications</span><span class="today">Signed in as {{ request.user.username }}</span></header>
+      <section class="page-heading"><div><p class="eyebrow">STAY IN THE LOOP</p><h1>Notifications<span class="heading-dot">.</span></h1><p class="subtitle">Assignments, comments, and progress updates from your teams.</p><div class="push-controls"><button class="add-button" id="push-alert-toggle" type="button" data-public-key="{{ VAPID_PUBLIC_KEY }}">Enable desktop alerts</button><span id="push-alert-status" role="status">Get WorkFlow alerts while you use other apps.</span></div></div></section>
+      <section class="notifications-list">
+        {% for notification in notifications %}
+          <article class="notification-row {% if not notification.read_at %}unread{% endif %}">
+            <span class="update-avatar">{{ notification.actor.username|first|upper|default:"W" }}</span>
+            <div class="notification-copy"><strong>{{ notification.team.name }}</strong> · {{ notification.message }}<time>{{ notification.created_at|date:"M j, Y · g:i a" }}</time></div>
+            {% if not notification.read_at %}<form method="post" action="{% url 'mark_notification_read' notification.id %}">{% csrf_token %}<button type="submit">Mark read</button></form>{% endif %}
+          </article>
+        {% empty %}
+          <section class="task-panel empty-notifications"><div class="empty-state"><div class="empty-icon">✦</div><strong>You’re all caught up.</strong><span>New task activity will appear here.</span></div></section>
+        {% endfor %}
+      </section>
+    </main>
+  </div>
+</body>
+<script defer src="{% static 'tasks/push_notifications.js' %}"></script>
+</html>

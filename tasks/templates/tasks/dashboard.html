@@ -1,0 +1,29 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ team.name }} overview — WorkFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+</head>
+<body><div class="app-shell">
+  {% include 'tasks/_sidebar.html' %}
+  <main class="main-content">
+    <header class="topbar"><span>{{ team.name }} <span class="crumb">/</span> Overview</span><div class="topbar-actions"><a class="notification-link" href="{% url 'notification_list' %}">Notifications{% if unread_notification_count %}<span class="notification-badge">{{ unread_notification_count }}</span>{% endif %}</a><form class="team-switcher" method="post" action="{% url 'set_active_team' %}">{% csrf_token %}<label for="team-switch">Workspace</label><select id="team-switch" name="team_id">{% for user_membership in my_memberships %}<option value="{{ user_membership.team.id }}" {% if user_membership.team.id == team.id %}selected{% endif %}>{{ user_membership.team.name }}</option>{% endfor %}</select><button type="submit">Switch</button></form></div></header>
+    {% if messages %}<div class="messages">{% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+    <section class="page-heading"><div><p class="eyebrow">TEAM OVERVIEW</p><h1>Good to see you, {{ request.user.username }}<span class="heading-dot">.</span></h1><p class="subtitle">Here’s the latest at {{ team.name }}. Pick a section to continue your work.</p></div><div class="date-card"><span class="date-icon">◷</span><span><strong>{% now "l" %}</strong><small>{% now "F j, Y" %}</small></span></div></section>
+    <section class="stats" aria-label="Team task summary">
+      <div class="stat-card"><span class="stat-icon purple">▤</span><span class="stat-number">{{ total_task_count }}</span><span class="stat-caption">Total tasks</span></div>
+      <div class="stat-card"><span class="stat-icon amber">◷</span><span class="stat-number">{{ in_progress_count }}</span><span class="stat-caption">In progress</span></div>
+      <div class="stat-card"><span class="stat-icon green">✓</span><span class="stat-number">{{ completed_count }}</span><span class="stat-caption">Completed</span></div>
+      <div class="stat-card"><span class="stat-icon red">!</span><span class="stat-number">{{ overdue_count }}</span><span class="stat-caption">Overdue</span></div>
+    </section>
+    <section class="task-panel overview-recent">
+      <div class="panel-heading"><div><h2>Recently added tasks</h2><p>A quick look at the team's latest work.</p></div><a class="section-link" href="{% url 'tasks_page' %}">View all tasks →</a></div>
+      <div class="task-list">{% for task in recent_tasks %}<article class="task-row"><div class="task-copy"><span class="task-title">{{ task.title }} <span class="priority-chip {{ task.priority }}">{{ task.get_priority_display }}</span></span><span class="task-meta">{{ task.get_status_display }} · {{ task.assigned_to.username|default:"Unassigned" }} · {% if task.due_date %}Due {{ task.due_date|date:"M j" }}{% else %}No due date{% endif %}</span></div><a class="edit-link" href="{% url 'edit_task' task.id %}">Open</a></article>{% empty %}<div class="empty-state"><div class="empty-icon">✦</div><strong>No tasks yet</strong><span>Create the first task in your Tasks section.</span><a class="section-link" href="{% url 'tasks_page' %}">Go to tasks →</a></div>{% endfor %}</div>
+    </section>
+    <p class="page-footer">Your team’s work, together.</p>
+  </main>
+</div></body></html>

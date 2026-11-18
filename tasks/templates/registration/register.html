@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Join the team — WorkFlow</title>
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <a class="brand auth-brand" href="{% url 'login' %}"><span class="brand-mark"><img src="{% static 'tasks/workflow-mark.svg' %}" alt=""></span><span>Work<span class="brand-light">Flow</span></span></a>
+    <p class="eyebrow">JOIN THE TEAM</p>
+    <h1>Create account<span class="heading-dot">.</span></h1>
+    <p class="subtitle">Verify your email, then create your username and password to join WorkFlow.</p>
+    <form method="post" class="auth-form register-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="auth-error">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="register-field">
+        <label for="{{ form.email.id_for_label }}">Email address</label>
+        {{ form.email }}
+        {% if form.email.errors %}<ul class="field-errors">{% for error in form.email.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+        <p class="field-help">Enter a valid address. We’ll send one 6-digit verification code that expires in 5 minutes.</p>
+      </div>
+      {% if code_sent %}
+        {% if email_uses_console %}<p class="auth-error">Email delivery is not configured yet. For local development, the code was printed in the terminal running Django. Add SMTP settings to your local .env file to receive it by email.</p>
+        {% else %}<p class="join-choice">We sent a verification code to {{ form.email.value }}. Enter it below to continue.</p>{% endif %}
+      {% endif %}
+      {% if not code_sent %}<button class="add-button auth-submit" type="submit" name="action" value="send_code">Get email code</button>{% endif %}
+      {% if code_sent %}
+      <div class="register-field">
+        <label for="{{ form.verification_code.id_for_label }}">Email code</label>
+        {{ form.verification_code }}
+        {% if form.verification_code.errors %}<ul class="field-errors">{% for error in form.verification_code.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="register-field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}<ul class="field-errors">{% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+        {% if form.username.help_text %}<p class="field-help">{{ form.username.help_text }}</p>{% endif %}
+      </div>
+      <div class="register-field">
+        <label for="{{ form.password1.id_for_label }}">Password</label>
+        {{ form.password1 }}
+        {% if form.password1.errors %}<ul class="field-errors">{% for error in form.password1.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+        {% if form.password1.help_text %}<div class="field-help">{{ form.password1.help_text }}</div>{% endif %}
+      </div>
+      <div class="register-field">
+        <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+        {{ form.password2 }}
+        {% if form.password2.errors %}<ul class="field-errors">{% for error in form.password2.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="join-choice">Starting a team? Enter a team name. Joining a team? Leave the name blank and enter your team’s invite code.</div>
+      <div class="register-field">
+        <label for="{{ form.team_name.id_for_label }}">New team name <span>(optional when joining)</span></label>
+        {{ form.team_name }}
+        {% if form.team_name.errors %}<ul class="field-errors">{% for error in form.team_name.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="register-field">
+        <label for="{{ form.invite_code.id_for_label }}">Invite code <span>(optional when creating a team)</span></label>
+        {{ form.invite_code }}
+        {% if form.invite_code.errors %}<ul class="field-errors">{% for error in form.invite_code.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+        <p class="field-help">Ask a team manager for an active invite code if you are joining an existing team.</p>
+      </div>
+      <button class="add-button auth-submit" type="submit" name="action" value="create_account">Verify email and create account</button>
+      <button class="cancel-button resend-code-button" type="submit" name="action" value="send_code">Send a new code</button>
+      {% endif %}
+    </form>
+    <p class="auth-switch">Already a member? <a href="{% url 'login' %}">Sign in</a></p>
+  </main>
+</body>
+</html>

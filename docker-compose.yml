@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: workflow
+      POSTGRES_USER: workflow
+      POSTGRES_PASSWORD: workflow-local-only
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workflow -d workflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+  web:
+    build: .
+    command: sh -c "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+    environment:
+      DATABASE_URL: postgres://workflow:workflow-local-only@db:5432/workflow
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: local-development-only-change-me
+      ALLOWED_HOSTS: localhost,127.0.0.1
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+volumes:
+  postgres_data:
