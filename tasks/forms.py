@@ -36,13 +36,6 @@ class SignupForm(UserCreationForm):
         model = get_user_model()
         fields = ('username',)
 
-    def clean_username(self):
-        username = self.cleaned_data['username']
-        if get_user_model().objects.filter(username__iexact=username).exists():
-            raise ValidationError('That username is already taken. Try another one.')
-        return username
-
-
 class TaskForm(forms.ModelForm):
     def __init__(self, *args, team=None, **kwargs):
         super().__init__(*args, **kwargs)

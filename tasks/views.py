@@ -79,7 +79,7 @@ def register(request):
                         role=TeamMembership.Role.MANAGER,
                     )
             except IntegrityError:
-                form.add_error('username', 'That username is already taken. Try another one.')
+                form.add_error(None, 'We could not create the account. Please try again.')
             else:
                 messages.success(request, 'Account created. Sign in with your username and password.')
                 return redirect('login')
