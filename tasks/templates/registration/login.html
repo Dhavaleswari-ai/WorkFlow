@@ -1,0 +1,38 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — WorkFlow</title>
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+  <script defer src="{% static 'tasks/auth_password_toggle.js' %}"></script>
+</head>
+<body class="auth-page login-page">
+  <main class="auth-card">
+    <a class="brand auth-brand" href="{% url 'login' %}"><span class="brand-mark" aria-hidden="true">WF</span><span>WorkFlow</span></a>
+    <p class="eyebrow">TEAM WORKSPACE</p>
+    <h1>Welcome back<span class="heading-dot">.</span></h1>
+    <p class="subtitle">Sign in to your team workspace with your username and password. You’ll stay signed in on this browser for up to 30 days.</p>
+    {% if messages %}{% for message in messages %}<p class="{% if 'success' in message.tags %}auth-success{% else %}auth-error{% endif %}">{{ message }}</p>{% endfor %}{% endif %}
+    {% if form.non_field_errors %}<p class="auth-error">{{ form.non_field_errors.0 }}</p>{% endif %}
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <label for="{{ form.username.id_for_label }}">Username</label>
+      {{ form.username }}
+      {% if form.username.errors %}<ul class="field-errors">{% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      <label for="{{ form.password.id_for_label }}">Password</label>
+      <div class="password-field">
+        {{ form.password }}
+        <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false" aria-controls="{{ form.password.id_for_label }}" title="Show password">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      {% if form.password.errors %}<ul class="field-errors">{% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      <button class="add-button auth-submit" type="submit">Sign in</button>
+    </form>
+    <p class="auth-switch">New to WorkFlow? <a href="{% url 'register' %}">Create an account</a></p>
+  </main>
+</body>
+</html>

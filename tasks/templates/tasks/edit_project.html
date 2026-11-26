@@ -1,0 +1,10 @@
+{% load static %}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Edit project — WorkFlow</title><link rel="stylesheet" href="{% static 'tasks/style.css' %}"></head>
+<body><div class="app-shell">{% include 'tasks/_sidebar.html' %}<main class="main-content"><header class="topbar"><span><a class="breadcrumb-link" href="{% url 'project_list' %}">Projects</a> <span class="crumb">/</span> Edit project</span></header>
+<section class="page-heading"><div><p class="eyebrow">PROJECT DETAILS</p><h1>Edit project<span class="heading-dot">.</span></h1><p class="subtitle">Update the dates and description for {{ project.name }}.</p></div></section>
+<section class="task-panel edit-panel"><div class="panel-heading"><div><h2>{{ project.name }}</h2><p>Dates help your team plan upcoming work.</p></div></div><form class="edit-form" method="post">{% csrf_token %}
+<label for="{{ form.name.id_for_label }}">Project name</label>{{ form.name }}{% if form.name.errors %}<p class="form-error">{{ form.name.errors.0 }}</p>{% endif %}
+<label for="{{ form.description.id_for_label }}">Description <span>(optional)</span></label>{{ form.description }}
+<label for="{{ form.start_date.id_for_label }}">Start date <span>(optional)</span></label>{{ form.start_date }}{% if form.start_date.errors %}<p class="form-error">{{ form.start_date.errors.0 }}</p>{% endif %}
+<label for="{{ form.due_date.id_for_label }}">Project deadline <span>(optional)</span></label>{{ form.due_date }}{% if form.due_date.errors %}<p class="form-error">{{ form.due_date.errors.0 }}</p>{% endif %}
+<div class="edit-actions"><a class="cancel-button" href="{% url 'project_list' %}">Cancel</a><button class="add-button" type="submit">Save project</button></div></form></section></main></div></body></html>

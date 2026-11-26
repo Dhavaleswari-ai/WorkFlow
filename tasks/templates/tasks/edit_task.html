@@ -1,0 +1,46 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Edit task — WorkFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+</head>
+<body>
+  <div class="app-shell">
+    {% include 'tasks/_sidebar.html' %}
+    <main class="main-content">
+      <header class="topbar"><span><a class="breadcrumb-link" href="{% url 'tasks_page' %}">Tasks</a> <span class="crumb">/</span> Edit task</span><span class="today">A little progress each day adds up.</span></header>
+      <section class="page-heading">
+        <div><p class="eyebrow">MAKE AN UPDATE</p><h1>Edit task<span class="heading-dot">.</span></h1><p class="subtitle">Update the task, assignee, or status.</p></div>
+      </section>
+      <section class="task-panel edit-panel">
+        <div class="panel-heading"><div><h2>{{ task.title }}</h2><p>Changes are recorded in the team activity feed.</p></div></div>
+        <form class="edit-form" method="post">
+          {% csrf_token %}
+          <label for="{{ form.title.id_for_label }}">Task title</label>
+          {{ form.title }}
+          {% if form.title.errors %}<p class="form-error">{{ form.title.errors.0 }}</p>{% endif %}
+          <label for="{{ form.description.id_for_label }}">Description <span>(optional)</span></label>
+          {{ form.description }}
+          <label for="{{ form.project.id_for_label }}">Project <span>(optional)</span></label>
+          {{ form.project }}
+          <label for="{{ form.assigned_to.id_for_label }}">Assign to <span>(optional)</span></label>
+          {{ form.assigned_to }}
+          <label for="{{ form.status.id_for_label }}">Status</label>
+          {{ form.status }}
+          <label for="{{ form.priority.id_for_label }}">Priority</label>
+          {{ form.priority }}
+          <label for="{{ form.due_date.id_for_label }}">Due date <span>(optional)</span></label>
+          {{ form.due_date }}
+          <div class="edit-actions"><a class="cancel-button" href="{% url 'tasks_page' %}">Cancel</a><button class="add-button" type="submit">Save changes</button></div>
+        </form>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

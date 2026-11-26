@@ -1,0 +1,78 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ team.name }} settings — WorkFlow</title>
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+</head>
+<body>
+  <div class="app-shell">
+    {% include 'tasks/_sidebar.html' %}
+    <main class="main-content">
+      <header class="topbar"><span>{{ team.name }} <span class="crumb">/</span> Settings</span><form class="team-switcher" method="post" action="{% url 'set_active_team' %}">{% csrf_token %}<label for="team-switch">My teams</label><select id="team-switch" name="team_id">{% for user_membership in my_memberships %}<option value="{{ user_membership.team.id }}" {% if user_membership.team.id == team.id %}selected{% endif %}>{{ user_membership.team.name }}</option>{% endfor %}</select><button type="submit">Switch</button></form></header>
+      {% if messages %}<div class="messages">{% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+      <section class="page-heading"><div><p class="eyebrow">TEAM MANAGEMENT</p><h1>Settings<span class="heading-dot">.</span></h1><p class="subtitle">Manage who belongs to {{ team.name }}.</p></div></section>
+
+      <section class="settings-grid">
+        <section class="task-panel settings-card">
+          <div class="panel-heading"><div><h2>Invite a teammate</h2><p>Codes stay active until a manager revokes them.</p></div></div>
+          {% if membership.role == 'manager' %}
+            <form class="settings-form" method="post" action="{% url 'create_team_invite' %}">
+              {% csrf_token %}
+              <label for="{{ invite_form.label.id_for_label }}">Invite note <span>(optional)</span></label>
+              {{ invite_form.label }}
+              <p class="field-help">For example, write the teammate’s name so you remember who this code is for.</p>
+              <button class="add-button" type="submit">Generate invite code</button>
+            </form>
+            <div class="invite-list">
+              <h3>Unused invite codes</h3>
+              {% for invite in invites %}
+                <div class="invite-code-row"><span><code>{{ invite.code }}</code><small>{{ invite.label|default:"Team invite" }}</small></span><form method="post" action="{% url 'revoke_team_invite' invite.id %}">{% csrf_token %}<button class="revoke-button" type="submit">Revoke</button></form></div>
+              {% empty %}
+                <p class="field-help">No active codes. Generate one above when you’re ready to invite someone.</p>
+              {% endfor %}
+              {% if revoked_invites %}<h3 class="revoked-heading">Revoked codes</h3>{% for invite in revoked_invites %}<div class="invite-code-row revoked-invite"><span><code>{{ invite.code }}</code><small>{{ invite.label|default:"Team invite" }}</small></span><span class="invite-state">Revoked</span></div>{% endfor %}{% endif %}
+            </div>
+            <p class="settings-note">Revoking cancels that code only. It does not block a person from the team or remove current members. If someone is removed from the team, they can rejoin with an active invite code.</p>
+          {% else %}
+            <div class="settings-form"><p>You’re a team member. Ask a team manager to create an invite code.</p></div>
+          {% endif %}
+        </section>
+
+        <section class="task-panel settings-card">
+          <div class="panel-heading"><div><h2>Members</h2><p>{{ members|length }} people in this team.</p></div><span class="list-count">{{ membership.get_role_display }}</span></div>
+          <div class="members-list">
+            {% for member in members %}
+              <div class="member-row"><span class="update-avatar">{% if member.user.workflow_profile.avatar %}<img src="{% url 'profile_icon' member.user.workflow_profile.id %}" alt="">{% else %}{{ member.user.username|first|upper }}{% endif %}</span><span class="member-info"><strong>{{ member.user.username }}</strong><small>{% if member.user.id == request.user.id %}You · {% endif %}{{ member.get_role_display }}</small></span>{% if membership.role == 'manager' and member.role == 'member' %}<form method="post" action="{% url 'remove_team_member' member.id %}">{% csrf_token %}<button class="revoke-button" type="submit">Remove</button></form>{% endif %}</div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="task-panel settings-card">
+          <div class="panel-heading"><div><h2>Join another team</h2><p>Enter an active code you received from a team manager.</p></div></div>
+          <form class="settings-form" method="post" action="{% url 'join_team_with_invite' %}">
+            {% csrf_token %}
+            <label for="{{ join_team_form.invite_code.id_for_label }}">Invite code</label>
+            {{ join_team_form.invite_code }}
+            <button class="add-button" type="submit">Join team</button>
+          </form>
+        </section>
+
+        <section class="task-panel settings-card create-team-card">
+          <div class="panel-heading"><div><h2>Create another team</h2><p>Use a separate workspace for another group or your own plans.</p></div></div>
+          <form class="settings-form" method="post" action="{% url 'create_team' %}">
+            {% csrf_token %}
+            <label for="{{ create_team_form.name.id_for_label }}">Team name</label>
+            {{ create_team_form.name }}
+            {% if create_team_form.name.errors %}<ul class="field-errors">{% for error in create_team_form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+            <button class="add-button" type="submit">Create team</button>
+          </form>
+        </section>
+      </section>
+      <p class="page-footer"><a class="breadcrumb-link" href="{% url 'task_list' %}">Back to {{ team.name }}</a></p>
+    </main>
+  </div>
+</body>
+</html>

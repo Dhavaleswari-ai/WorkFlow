@@ -1,0 +1,150 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WorkFlow — team workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+  <script defer src="{% static 'tasks/live_updates.js' %}"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="{% url 'task_list' %}"><span class="brand-mark" aria-hidden="true">WF</span><span>WorkFlow</span></a>
+      <p class="side-label">WORKSPACE</p>
+      <a class="nav-link active" href="{% url 'task_list' %}"><span class="nav-icon">▦</span> Team workspace <span class="nav-count">{{ remaining_count }}</span></a>
+      <a class="nav-link" href="{% url 'team_settings' %}"><span class="nav-icon">⚙</span> Team settings</a>
+      <div class="sidebar-bottom"><div class="avatar">{{ request.user.username|first|upper }}</div><div><strong>{{ request.user.username }}</strong><small>Team member</small></div><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="logout-button" type="submit">Log out</button></form></div>
+    </aside>
+
+    <main class="main-content" id="workflow-app" data-team-id="{{ team.id }}">
+      <header class="topbar"><span>{{ team.name }} <span class="crumb">/</span> Shared workspace</span><div class="topbar-actions"><a class="notification-link" href="{% url 'notification_list' %}">Notifications{% if unread_notification_count %}<span class="notification-badge">{{ unread_notification_count }}</span>{% endif %}</a><form class="team-switcher" method="post" action="{% url 'set_active_team' %}">{% csrf_token %}<label for="team-switch">My teams</label><select id="team-switch" name="team_id">{% for user_membership in my_memberships %}<option value="{{ user_membership.team.id }}" {% if user_membership.team.id == team.id %}selected{% endif %}>{{ user_membership.team.name }}</option>{% endfor %}</select><button type="submit">Switch</button></form></div></header>
+      {% if messages %}<div class="messages">{% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+      <section class="page-heading">
+        <div><p class="eyebrow">YOUR TEAM'S SHARED SPACE</p><h1>{{ team.name }}<span class="heading-dot">.</span></h1><p class="subtitle">See tasks and progress updates from everyone on this team.</p></div>
+        <div class="date-card"><span class="date-icon">◷</span><span><strong>{% now "l" %}</strong><small>{% now "F j, Y" %}</small></span></div>
+      </section>
+
+      <section class="stats" aria-label="Task summary">
+        <div class="stat-card"><span class="stat-icon purple">↗</span><span class="stat-number">{{ todo_count }}</span><span class="stat-caption">To do</span></div>
+        <div class="stat-card"><span class="stat-icon amber">◷</span><span class="stat-number">{{ in_progress_count }}</span><span class="stat-caption">In progress</span></div>
+        <div class="stat-card"><span class="stat-icon green">✓</span><span class="stat-number">{{ completed_count }}</span><span class="stat-caption">Done</span></div>
+        <div class="stat-card"><span class="stat-icon red">!</span><span class="stat-number">{{ overdue_count }}</span><span class="stat-caption">Overdue</span></div>
+      </section>
+
+      <section class="task-panel">
+        <div class="panel-heading"><div><h2>Shared task list</h2><p>Everyone on the team can see and update these tasks.</p></div><span class="list-count">{{ remaining_count }} remaining</span></div>
+        <form class="filter-form" method="get">
+          <input type="search" name="q" value="{{ query }}" placeholder="Search tasks…" aria-label="Search tasks">
+          <select name="status" aria-label="Filter by status"><option value="">All statuses</option>{% for value, label in task_statuses %}<option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          <select name="priority" aria-label="Filter by priority"><option value="">All priorities</option>{% for value, label in task_priorities %}<option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          <select name="sort" aria-label="Sort tasks"><option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest</option><option value="due_date" {% if sort_by == 'due_date' %}selected{% endif %}>Due date</option><option value="priority" {% if sort_by == 'priority' %}selected{% endif %}>Priority</option></select>
+          <button type="submit">Apply</button>
+        </form>
+        <form class="add-form" method="post">
+          {% csrf_token %}
+          <div class="form-fields">{{ form.title }}{{ form.description }}</div>
+          <label class="compact-field new-task-assignee"><span>Assign to</span>{{ form.assigned_to }}</label>
+          <label class="compact-field new-task-status"><span>Status</span>{{ form.status }}</label>
+          <label class="compact-field"><span>Priority</span>{{ form.priority }}</label>
+          <label class="compact-field"><span>Due date</span>{{ form.due_date }}</label>
+          <button class="add-button" type="submit"><span>＋</span> Add task</button>
+          {% if form.errors %}<p class="form-error">Please check the task details and try again.</p>{% endif %}
+        </form>
+
+        <div class="task-list">
+          {% for task in tasks %}
+          <article class="task-row {% if task.status == 'done' %}is-complete{% endif %}">
+            <div class="task-copy"><span class="task-title">{{ task.title }} <span class="priority-chip {{ task.priority }}">{{ task.get_priority_display }}</span>{% if task.is_overdue %}<span class="overdue-chip">Overdue</span>{% endif %}</span>{% if task.description %}<span class="task-description">{{ task.description }}</span>{% endif %}<span class="task-meta">Added by {{ task.created_by.username|default:"Team" }} · Assigned to {{ task.assigned_to.username|default:"Anyone" }} · Due {{ task.due_date|date:"M j, Y"|default:"No due date" }}</span></div>
+            <form class="status-form" method="post" action="{% url 'set_task_status' task.id %}">{% csrf_token %}<select name="status" aria-label="Status for {{ task.title }}">{% for value, label in task_statuses %}<option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button type="submit">Save</button></form>
+            <a class="edit-link" href="{% url 'edit_task' task.id %}">Edit</a>
+            <span class="task-date">{{ task.created_at|date:"M j" }}</span>
+            {% if task.created_by_id == request.user.id or membership.role == 'manager' %}<form method="post" action="{% url 'delete_task' task.id %}">{% csrf_token %}<button class="delete-button" type="submit" aria-label="Delete {{ task.title }}">×</button></form>{% endif %}
+          </article>
+          <details class="comments-panel">
+            <summary>Comments ({{ task.comments.count }})</summary>
+            <div class="comments-content">
+              {% for comment in task.comments.all %}
+                <article class="comment-item">
+                  <span class="comment-avatar">{{ comment.author.username|first|upper }}</span>
+                  <div class="comment-body"><div class="comment-byline"><strong>{{ comment.author.username }}</strong><time>{{ comment.created_at|date:"M j, g:i a" }}</time></div><p>{{ comment.message|linebreaksbr }}</p></div>
+                </article>
+              {% empty %}
+                <p class="no-comments">No comments yet. Start the conversation.</p>
+              {% endfor %}
+              <form class="comment-form" method="post" action="{% url 'add_task_comment' task.id %}">
+                {% csrf_token %}
+                {{ comment_form.message }}
+                <button class="add-button" type="submit">Comment</button>
+              </form>
+            </div>
+          </details>
+          {% empty %}
+          <div class="empty-state"><div class="empty-icon">✦</div><strong>Your list is a blank canvas.</strong><span>Add a task above and make a little progress.</span></div>
+          {% endfor %}
+        </div>
+        <footer class="panel-footer"><span>Small steps make big things happen.</span><span>{{ completed_count }} done <span class="footer-check">✓</span></span></footer>
+      </section>
+      <section class="team-grid">
+        <section class="task-panel updates-panel">
+          <div class="panel-heading"><div><h2>Team progress</h2><p>Share what you completed and how you did it.</p></div><span class="list-count">{{ updates|length }} recent</span></div>
+          <form class="update-form" method="post" action="{% url 'add_progress_update' %}">
+            {% csrf_token %}
+            {{ update_form.title }}
+            {{ update_form.details }}
+            <button class="add-button" type="submit">Post update</button>
+          </form>
+          <div class="updates-list">
+            {% for update in updates %}
+              <article class="update-card">
+                <div class="update-avatar">{{ update.author.username|first|upper }}</div>
+                <div class="update-content"><div class="update-title-row"><strong>{{ update.title }}</strong><time>{{ update.created_at|date:"M j, g:i a" }}</time></div><p class="update-author">{{ update.author.username }}</p><p class="update-details">{{ update.details|linebreaksbr }}</p></div>
+              </article>
+            {% empty %}
+              <div class="empty-state compact-empty"><div class="empty-icon">✦</div><strong>No progress updates yet.</strong><span>Post the team's first update above.</span></div>
+            {% endfor %}
+          </div>
+          <div class="activity-section">
+            <div class="activity-heading"><h3>Task activity</h3><span>Who changed what</span></div>
+            <div class="activity-list">
+              {% for activity in task_activities %}
+                <article class="activity-row"><span class="activity-dot"></span><p><strong>{{ activity.actor.username }}</strong> {{ activity.message }} <b>{{ activity.task_title }}</b><time>{{ activity.created_at|date:"M j, g:i a" }}</time></p></article>
+              {% empty %}
+                <p class="activity-empty">Changes to tasks will appear here.</p>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+        <section class="task-panel members-panel">
+          <div class="panel-heading"><div><h2>Team analytics</h2><p>{{ total_task_count }} tasks · {{ members|length }} team members</p></div><span class="list-count">{{ overdue_count }} overdue</span></div>
+          <section class="chart-section" aria-labelledby="project-chart-title">
+            <h3 id="project-chart-title">Project completion</h3>
+            <p class="chart-caption">Share of all team tasks by current status</p>
+            <div class="chart-content"><div class="pie-chart" style="{{ status_chart_style }}" role="img" aria-label="Task status chart"></div><ul class="chart-legend">{% for segment in status_segments %}<li><span class="legend-dot" style="background: {{ segment.color }}"></span><span>{{ segment.label }}</span><strong>{{ segment.value }}</strong></li>{% endfor %}</ul></div>
+            <p class="chart-summary">{{ completed_count }} of {{ total_task_count }} tasks completed{% if total_task_count %} · {% widthratio completed_count total_task_count 100 %}%{% endif %}</p>
+          </section>
+          <section class="chart-section contribution-chart" aria-labelledby="contribution-chart-title">
+            <h3 id="contribution-chart-title">Member contribution</h3>
+            <p class="chart-caption">Share of tasks assigned to each member</p>
+            {% if contribution_segments %}
+            <div class="chart-content"><div class="pie-chart" style="{{ contribution_chart_style }}" role="img" aria-label="Assigned tasks by team member"></div><ul class="chart-legend">{% for segment in contribution_segments %}<li><span class="legend-dot" style="background: {{ segment.color }}"></span><span>{{ segment.label }}</span><strong>{{ segment.value }}</strong></li>{% endfor %}</ul></div>
+            {% else %}<p class="chart-empty">No tasks have been assigned to team members yet.</p>{% endif %}
+            <p class="chart-summary">Based on assigned task counts; this does not measure time or effort.</p>
+          </section>
+          <div class="members-list">
+            {% for member in members %}
+              <div class="member-row"><span class="update-avatar">{{ member.user.username|first|upper }}</span><span class="member-info"><strong>{{ member.user.username }}</strong><small>{% if member.user.id == request.user.id %}You · {% endif %}{{ member.get_role_display }}</small><small>{{ member.assigned_task_count }} assigned · {{ member.completed_task_count }} done ({{ member.contribution_done_percent }}%) · {{ member.progress_update_count }} updates</small></span></div>
+            {% endfor %}
+          </div>
+          <a class="invite-hint" href="{% url 'team_settings' %}">⚙ Manage this team</a>
+        </section>
+      </section>
+      <p class="page-footer">Made for a more focused day <span>✦</span></p>
+    </main>
+  </div>
+</body>
+</html>

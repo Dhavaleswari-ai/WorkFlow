@@ -1,0 +1,25 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create a team — WorkFlow</title>
+  <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <a class="brand auth-brand" href="{% url 'task_list' %}"><span class="brand-mark" aria-hidden="true">WF</span><span>WorkFlow</span></a>
+    <p class="eyebrow">NEW WORKSPACE</p>
+    <h1>Create a team<span class="heading-dot">.</span></h1>
+    <p class="subtitle">Give this team a name. Its tasks and updates will be private to its members.</p>
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      <label for="{{ form.name.id_for_label }}">Team name</label>
+      {{ form.name }}
+      {% if form.name.errors %}<ul class="field-errors">{% for error in form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      <button class="add-button auth-submit" type="submit">Create team</button>
+    </form>
+  </main>
+</body>
+</html>
